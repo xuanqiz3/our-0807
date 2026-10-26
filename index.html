@@ -9,16 +9,18 @@ button{margin-top:14px;width:100%;border:0;border-radius:30px;background:#e0707f
 <input id="pw" type="password" autocomplete="off" placeholder="••••" onkeydown="if(event.key==='Enter')go()"><button onclick="go()" id="bt">进入</button><div id="e"></div></div>
 <script>
 const IT=300000;
-async function dec(pw,buf){const u=new Uint8Array(buf),salt=u.slice(0,16),iv=u.slice(16,28),ct=u.slice(28);
+let buf=null;const pf=fetch('site.enc').then(r=>r.arrayBuffer()).then(b=>buf=b).catch(()=>null);
+async function dec(pw,buf){const u=new Uint8Array(buf),salt=u.slice(0,16),iv=u.slice(16,28),ct=u.subarray(28);
  const km=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
  const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:IT,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['decrypt']);
- return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv},k,ct)))}
-function b2u(b){const s=atob(b),a=new Uint8Array(s.length);for(let i=0;i<s.length;i++)a[i]=s.charCodeAt(i);return URL.createObjectURL(new Blob([a],{type:'image/jpeg'}))}
-let buf=null;
+ return new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv},k,ct))}
 async function open_(pw,silent){const e=document.getElementById('e'),bt=document.getElementById('bt');
- try{bt.disabled=true;bt.textContent='解锁中…';if(!buf)buf=await (await fetch('site.enc')).arrayBuffer();
-  const d=await dec(pw,buf);const P={};let h=d.html;
-  for(const[n,b]of Object.entries(d.photos)){const u=b2u(b);P[n.replace('.jpg','')]=u;h=h.split('photos/'+n).join(u)}
+ try{bt.disabled=true;bt.textContent='解锁中…';e.textContent='';if(!buf)await pf;if(!buf)buf=await (await fetch('site.enc')).arrayBuffer();
+  const u=await dec(pw,buf),dv=new DataView(u.buffer,u.byteOffset,u.byteLength);let o=0;
+  const hl=dv.getUint32(o);o+=4;let h=new TextDecoder().decode(u.subarray(o,o+hl));o+=hl;
+  const cnt=dv.getUint32(o);o+=4;const P={};
+  for(let i=0;i<cnt;i++){const nl=dv.getUint8(o);o+=1;const n=new TextDecoder().decode(u.subarray(o,o+nl));o+=nl;const sz=dv.getUint32(o);o+=4;
+   const url=URL.createObjectURL(new Blob([u.subarray(o,o+sz)],{type:'image/jpeg'}));o+=sz;P[n.replace('.jpg','')]=url;h=h.split('photos/'+n).join(url)}
   h=h.split('photos/${id}.jpg').join('${window.__P[id]}');window.__P=P;
   document.open();document.write(h);document.close()}
  catch(x){bt.disabled=false;bt.textContent='进入';if(!silent)e.textContent='暗号不对，再试试'}}
