@@ -20,9 +20,8 @@ async function open_(pw,silent){const e=document.getElementById('e'),bt=document
   const d=await dec(pw,buf);const P={};let h=d.html;
   for(const[n,b]of Object.entries(d.photos)){const u=b2u(b);P[n.replace('.jpg','')]=u;h=h.split('photos/'+n).join(u)}
   h=h.split('photos/${id}.jpg').join('${window.__P[id]}');window.__P=P;
-  try{localStorage.setItem('k',pw)}catch(_){}
   document.open();document.write(h);document.close()}
- catch(x){bt.disabled=false;bt.textContent='进入';if(!silent)e.textContent='暗号不对，再试试';try{localStorage.removeItem('k')}catch(_){}}}
+ catch(x){bt.disabled=false;bt.textContent='进入';if(!silent)e.textContent='暗号不对，再试试'}}
 function go(){open_(document.getElementById('pw').value,false)}
-try{const k=localStorage.getItem('k');if(k)open_(k,true)}catch(_){}
+try{localStorage.removeItem('k')}catch(_){}
 </script></body></html>
